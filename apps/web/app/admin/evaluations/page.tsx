@@ -1,0 +1,1 @@
+import { AdminShell,ProtectedData } from "@/components/admin";export default function Page(){return <AdminShell title="Evaluation dashboard" copy="Review grounding, citations, attribution, refusal correctness, diversity, latency, and cost across the versioned dataset."><ProtectedData endpoint="evaluations"/></AdminShell>}

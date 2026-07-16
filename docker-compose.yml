@@ -1,0 +1,122 @@
+name: african-founder-studies
+
+x-python: &python
+  build:
+    context: .
+    dockerfile: infrastructure/docker/Dockerfile.python
+  env_file: [.env]
+  volumes: ["./reports:/app/reports"]
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_DB: afs
+      POSTGRES_USER: afs
+      POSTGRES_PASSWORD: afs
+    ports: ["5432:5432"]
+    volumes: [postgres-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U afs -d afs"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:8.2-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    ports: ["6379:6379"]
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-change-me-locally}
+    ports: ["9000:9000", "9001:9001"]
+    volumes: [minio-data:/data]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    depends_on:
+      minio: { condition: service_healthy }
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        mc alias set local http://minio:9000 "$${S3_ACCESS_KEY}" "$${S3_SECRET_KEY}" &&
+        mc mb --ignore-existing "local/$${S3_BUCKET}" &&
+        mc anonymous set none "local/$${S3_BUCKET}"
+    env_file: [.env]
+    restart: "no"
+
+  migrate:
+    <<: *python
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: "no"
+
+  seed:
+    <<: *python
+    command: ["python", "-m", "scripts.seed"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    restart: "no"
+
+  api:
+    <<: *python
+    ports: ["8000:8000"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      minio-init: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health/live')"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  worker:
+    <<: *python
+    command: ["celery", "-A", "apps.worker.worker.celery_app:celery_app", "worker", "--loglevel=INFO", "-Q", "discovery,crawl,ingestion,ai,celery"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      minio-init: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+  web:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.web
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}
+    environment:
+      API_INTERNAL_URL: http://api:8000
+    ports: ["${WEB_PORT:-3000}:3000"]
+    depends_on:
+      api: { condition: service_healthy }
+      seed: { condition: service_completed_successfully }
+    restart: unless-stopped
+
+  fixture-site:
+    image: nginx:1.29-alpine
+    volumes:
+      - ./fixtures/site:/usr/share/nginx/html:ro
+    profiles: ["fixtures"]
+
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:

@@ -1,0 +1,1 @@
+import { AdminShell,ProtectedData } from "@/components/admin";export default function Page(){return <AdminShell title="Query and collection analytics" copy="Track approved records separately from unique underlying works, with answer and refusal behavior."><ProtectedData endpoint="analytics"/></AdminShell>}

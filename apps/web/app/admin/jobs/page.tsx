@@ -1,0 +1,1 @@
+import { AdminShell,ProtectedData } from "@/components/admin";export default function Page(){return <AdminShell title="Background jobs" copy="Monitor progress, attempts, correlation IDs, failure details, and cancellation state for crawl and ingestion work."><ProtectedData endpoint="ingestion-jobs"/></AdminShell>}

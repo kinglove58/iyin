@@ -1,0 +1,9 @@
+[
+  {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "url": "https://example.com/public-domain-research-fixture",
+    "approval_status": "approved",
+    "fixture": true,
+    "attribution": "Fictional research fixture; not attributed to a real person"
+  }
+]

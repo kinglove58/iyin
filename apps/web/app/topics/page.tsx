@@ -1,0 +1,5 @@
+import Link from "next/link";
+import { getTopics } from "@/lib/api";
+import { EmptyState, PageIntro, PageShell } from "@/components/site";
+
+export default async function TopicsPage() { const topics = await getTopics(); return <PageShell><PageIntro eyebrow="Topic index" title="Follow recurring questions across the public record." copy="The taxonomy is editable and designed to reveal evidence across companies, formats, and years."/><div className="mx-auto max-w-7xl px-5 py-12 lg:px-8">{topics.length ? <div className="grid gap-px overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--line)] sm:grid-cols-2 lg:grid-cols-3">{topics.map((topic,index)=><Link href={`/topics/${topic.slug}`} key={topic.id} className="min-h-48 bg-[var(--card)] p-6 no-underline hover:bg-white"><span className="serif text-2xl text-[var(--ochre)]">{String(index+1).padStart(2,"0")}</span><h2 className="mt-8 text-2xl">{topic.name}</h2><p className="mt-2 text-sm leading-6 text-[var(--muted)]">{topic.description}</p></Link>)}</div> : <EmptyState title="No topics loaded" copy="Run the seed command to install the initial editable research taxonomy."/>}</div></PageShell>; }

@@ -1,0 +1,14 @@
+FROM python:3.13-slim AS runtime
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 UV_COMPILE_BYTECODE=1
+RUN pip install --no-cache-dir uv==0.7.17 \
+    && groupadd --system afs \
+    && useradd --system --gid afs --home-dir /app afs \
+    && mkdir -p /app \
+    && chown afs:afs /app
+WORKDIR /app
+COPY --chown=afs:afs pyproject.toml uv.lock ./
+USER afs
+RUN uv sync --frozen --no-dev
+COPY --chown=afs:afs . .
+ENV PATH="/app/.venv/bin:$PATH" PYTHONPATH=/app
+CMD ["uvicorn", "apps.api.afs.main:app", "--host", "0.0.0.0", "--port", "8000"]

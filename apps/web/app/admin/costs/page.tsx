@@ -1,0 +1,1 @@
+import { AdminShell,ProtectedData } from "@/components/admin";export default function Page(){return <AdminShell title="Provider cost controls" copy="Track token usage and estimated AI and Zyte spend against monthly and per-run ceilings."><ProtectedData endpoint="analytics"/></AdminShell>}

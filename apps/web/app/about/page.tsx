@@ -1,0 +1,10 @@
+import { Notice, PageIntro, PageShell } from "@/components/site";
+
+const sections=[
+  ["1. Discovery is not approval","Candidate URLs may be discovered by search APIs, official platform APIs, or manual submission. Every candidate stays outside the knowledge base until a human reviewer approves it."],
+  ["2. Raw evidence comes first","A content-addressed snapshot is written to immutable object storage before extraction or cleaning. Each transformation creates a traceable new version."],
+  ["3. Attribution is reviewed","Interview questions, host remarks, panel discussion, and founder statements are segmented. Low-confidence attribution is withheld from belief-oriented answers."],
+  ["4. Retrieval is constrained","Keyword and semantic results are fused, filtered to approved Tier A/B material, diversified across underlying works, and optionally reranked."],
+  ["5. Answers remain accountable","Claims must point to retrieved sources. Dates, conflicts, limitations, and refusals are part of the response—not hidden implementation details."]
+];
+export default function AboutPage(){return <PageShell><PageIntro eyebrow="Methodology" title="A public record is useful only when its chain of evidence is inspectable." copy="Our process is designed around provenance, human approval, cautious attribution, and reproducible evaluation."/><div className="mx-auto max-w-4xl px-5 py-12"><Notice/><div className="mt-12 space-y-10">{sections.map(([title,copy])=><section key={title}><h2 className="text-3xl">{title}</h2><p className="prose-copy mt-3">{copy}</p></section>)}</div><section className="mt-14 rounded-xl bg-[var(--forest)] p-7 text-white"><h2 className="text-3xl">Crawler policy in brief</h2><p className="mt-4 leading-7 text-[#d7e5dc]">The crawler respects robots.txt, uses a declared user agent, conservative concurrency and per-domain delays, records access decisions, avoids authenticated or restricted material, and supports an emergency domain stop. Technical retrievability never equals permission to ingest.</p></section></div></PageShell>}

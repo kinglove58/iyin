@@ -1,0 +1,1 @@
+import { AdminShell,ProtectedData } from "@/components/admin";export default function Page(){return <AdminShell title="Chunk and speaker review" copy="Inspect semantic boundaries, quality flags, speaker verification, timestamps, and answer eligibility."><ProtectedData endpoint="chunks"/></AdminShell>}

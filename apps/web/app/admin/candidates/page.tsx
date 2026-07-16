@@ -1,0 +1,1 @@
+import { AdminShell,CandidateQueue } from "@/components/admin";export default function Page(){return <AdminShell title="Candidate review queue" copy="Scores explain prioritization but never grant automatic approval. Check provenance, robots status, directness, duplicates, and extraction feasibility."><CandidateQueue/></AdminShell>}

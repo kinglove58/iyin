@@ -1,0 +1,1 @@
+import { AdminShell,ProtectedData } from "@/components/admin";export default function Page(){return <AdminShell title="Source review" copy="Compare approved metadata and provenance before making chunks answer eligible."><ProtectedData endpoint="sources"/></AdminShell>}

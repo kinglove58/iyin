@@ -1,0 +1,75 @@
+[project]
+name = "african-founder-studies"
+version = "0.1.0"
+description = "Independent citation-based African founder research platform"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+  "alembic==1.18.5",
+  "argon2-cffi==25.1.0",
+  "asyncpg==0.31.0",
+  "boto3==1.43.48",
+  "celery==5.6.3",
+  "email-validator>=2.3.0",
+  "fastapi==0.139.0",
+  "httpx==0.28.1",
+  "pgvector==0.5.0",
+  "prometheus-client==0.25.0",
+  "pydantic-settings==2.14.2",
+  "pypdf>=6.8.0",
+  "python-multipart>=0.0.22",
+  "pyjwt==2.13.0",
+  "redis==8.0.1",
+  "scrapy==2.17.0",
+  "scrapy-zyte-api==0.35.0",
+  "sqlalchemy==2.0.51",
+  "structlog==26.1.0",
+  "uvicorn[standard]==0.51.0",
+]
+
+[dependency-groups]
+dev = [
+  "aiosqlite>=0.22.1",
+  "mypy==2.3.0",
+  "pytest==9.1.1",
+  "pytest-asyncio==1.4.0",
+  "ruff==0.15.21",
+  "types-boto3>=1.0.2",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+addopts = "-q --strict-markers"
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+markers = ["integration: requires PostgreSQL/Redis/MinIO", "security: security-sensitive behavior"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+src = ["apps", "services", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "ASYNC", "S"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"apps/api/afs/auth.py" = ["B008"]
+"infrastructure/migrations/versions/*.py" = ["E501"]
+
+[[tool.mypy.overrides]]
+module = ["celery", "celery.*"]
+ignore_missing_imports = true
+disallow_untyped_decorators = false
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+packages = ["apps.api.afs", "apps.worker.worker", "services"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+warn_required_dynamic_aliases = true
