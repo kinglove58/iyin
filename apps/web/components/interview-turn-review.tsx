@@ -203,6 +203,20 @@ export function InterviewTurnReview() {
         >
           Select suggested Iyin ({suggestedIyin.length})
         </button>
+        <button
+          type="button"
+          onClick={() => setSelected(new Set(turns.map(item => item.id)))}
+          className="rounded-full border border-[var(--line)] px-4 py-2 text-sm font-bold"
+        >
+          Select all ({turns.length})
+        </button>
+        {selected.size > 0 && <button
+          type="button"
+          onClick={() => setSelected(new Set())}
+          className="rounded-full border border-[var(--line)] px-4 py-2 text-sm font-bold text-[var(--muted)]"
+        >
+          Clear
+        </button>}
         <span className="text-sm text-[var(--muted)]">{selected.size} selected</span>
       </div>
       <div className="flex gap-2">
