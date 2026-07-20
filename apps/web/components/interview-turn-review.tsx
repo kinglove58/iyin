@@ -7,6 +7,8 @@ const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 type MixedSource = {
   source_id: string;
   title: string;
+  review_status: string;
+  pending_turn_count: number;
   duration_seconds: number;
 };
 
@@ -39,16 +41,19 @@ export function InterviewTurnReview() {
   const load = useCallback(async () => {
     try {
       const sourceResponse = await fetch(
-        `${API}/speaker-reviews?status=mixed_speakers&limit=200`,
+        `${API}/speaker-reviews?status=all&limit=200`,
         { credentials: "include" },
       );
       if (!sourceResponse.ok) throw new Error("Sources unavailable");
-      const mixed = await sourceResponse.json() as MixedSource[];
-      setSources(mixed);
-      const activeSource = sourceId || mixed[0]?.source_id || "";
-      if (!sourceId && activeSource) setSourceId(activeSource);
+      const reviewedSources = await sourceResponse.json() as MixedSource[];
+      const pendingSources = reviewedSources.filter(source => source.pending_turn_count > 0);
+      setSources(pendingSources);
+      const activeSource = sourceId && pendingSources.some(source => source.source_id === sourceId)
+        ? sourceId
+        : pendingSources[0]?.source_id || "";
+      if (activeSource && activeSource !== sourceId) setSourceId(activeSource);
       if (!activeSource) {
-        setMessage("No mixed-speaker interviews are available.");
+        setMessage("No pending interview-turn suggestions are available.");
         return;
       }
       const turnResponse = await fetch(
@@ -180,7 +185,7 @@ export function InterviewTurnReview() {
           className="min-w-0 flex-1 rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm"
         >
           {sources.map(source => <option key={source.source_id} value={source.source_id}>
-            {source.title} ({formatTime(source.duration_seconds)})
+            {source.title} ({source.pending_turn_count} pending, {formatTime(source.duration_seconds)})
           </option>)}
         </select>
         <button

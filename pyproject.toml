@@ -41,6 +41,9 @@ dev = [
 [tool.uv]
 package = false
 
+[tool.vercel]
+entrypoint = "apps.api.afs.main:app"
+
 [tool.pytest.ini_options]
 addopts = "-q --strict-markers"
 testpaths = ["tests"]

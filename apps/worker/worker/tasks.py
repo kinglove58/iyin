@@ -836,7 +836,111 @@ async def _analyze_interview_turns(job_id: uuid.UUID) -> dict[str, Any]:
                 )
                 .values(status="superseded", reviewed_at=datetime.now(UTC))
             )
+            auto_publish = settings.interview_turn_auto_publish_iyin
+            auto_publish_min_confidence = settings.interview_turn_auto_publish_min_confidence
+            founder_speaker_id: uuid.UUID | None = None
+            version_id: uuid.UUID | None = None
+            auto_approved_count = 0
+            auto_rejected_count = 0
+            if auto_publish:
+                founder_speaker_id = await db.scalar(
+                    text(
+                        """
+                        SELECT id FROM speakers
+                        WHERE founder_id=:founder_id AND name=:name
+                        LIMIT 1
+                        """
+                    ),
+                    {"founder_id": source.founder_id, "name": founder_name},
+                )
+                if founder_speaker_id is None:
+                    founder_speaker_id = uuid.uuid4()
+                    await db.execute(
+                        text(
+                            """
+                            INSERT INTO speakers (id, founder_id, name, role)
+                            VALUES (:id, :founder_id, :name, 'founder')
+                            """
+                        ),
+                        {
+                            "id": founder_speaker_id,
+                            "founder_id": source.founder_id,
+                            "name": founder_name,
+                        },
+                    )
+                approved_texts = [
+                    str(turn["cleaned_text"])
+                    for turn in turns
+                    if turn["role"] == "iyin"
+                    and float(cast(float, turn["confidence"])) >= auto_publish_min_confidence
+                ]
+                if approved_texts:
+                    next_version = (
+                        await db.scalar(
+                            text(
+                                """
+                                SELECT COALESCE(MAX(version), 0) + 1
+                                FROM source_versions
+                                WHERE source_id=:source_id
+                                """
+                            ),
+                            {"source_id": source.id},
+                        )
+                        or 1
+                    )
+                    version_id = uuid.uuid4()
+                    joined_text = "\n\n".join(approved_texts)
+                    await db.execute(
+                        text(
+                            """
+                            INSERT INTO source_versions
+                                (id, source_id, version, raw_artifact_id, cleaned_text, content_hash)
+                            VALUES
+                                (:id, :source_id, :version, :raw_artifact_id, :cleaned_text, :content_hash)
+                            """
+                        ),
+                        {
+                            "id": version_id,
+                            "source_id": source.id,
+                            "version": next_version,
+                            "raw_artifact_id": source.raw_artifact_id,
+                            "cleaned_text": joined_text,
+                            "content_hash": content_hash(joined_text),
+                        },
+                    )
             for turn in turns:
+                turn_role = str(turn["role"])
+                confidence = float(cast(float, turn["confidence"]))
+                chunk_id: uuid.UUID | None = None
+                suggestion_status = "pending"
+                reviewed_at = None
+                if auto_publish:
+                    reviewed_at = datetime.now(UTC)
+                    if turn_role == "iyin" and confidence >= auto_publish_min_confidence:
+                        flags = prompt_injection_flags(str(turn["cleaned_text"]))
+                        chunk = Chunk(
+                            source_id=source.id,
+                            source_version_id=version_id,
+                            speaker_id=founder_speaker_id,
+                            text=str(turn["cleaned_text"]),
+                            start_seconds=float(cast(float, turn["start_seconds"])),
+                            end_seconds=float(cast(float, turn["end_seconds"])),
+                            token_count=max(1, round(len(str(turn["cleaned_text"]).split()) * 1.3)),
+                            speaker_verified=True,
+                            answer_eligible=not bool(flags),
+                            quality_flags=flags,
+                            embedding=None,
+                            embedding_model=None,
+                            embedding_version="interview-turn-auto-approved-v1",
+                        )
+                        db.add(chunk)
+                        await db.flush()
+                        chunk_id = chunk.id
+                        suggestion_status = "approved"
+                        auto_approved_count += 1
+                    else:
+                        suggestion_status = "rejected"
+                        auto_rejected_count += 1
                 db.add(
                     InterviewTurnSuggestion(
                         source_id=source.id,
@@ -844,14 +948,16 @@ async def _analyze_interview_turns(job_id: uuid.UUID) -> dict[str, Any]:
                         job_id=job.id,
                         start_seconds=float(cast(float, turn["start_seconds"])),
                         end_seconds=float(cast(float, turn["end_seconds"])),
-                        suggested_role=str(turn["role"]),
+                        suggested_role=turn_role,
                         cleaned_text=str(turn["cleaned_text"]),
-                        confidence=float(cast(float, turn["confidence"])),
+                        confidence=confidence,
                         rationale=str(turn["rationale"]),
                         segment_ids=[
                             str(item) for item in cast(list[str], turn["segment_ids"])
                         ],
-                        status="pending",
+                        status=suggestion_status,
+                        chunk_id=chunk_id,
+                        reviewed_at=reviewed_at,
                         model=usage.model,
                     )
                 )
@@ -900,7 +1006,10 @@ async def _analyze_interview_turns(job_id: uuid.UUID) -> dict[str, Any]:
                 ),
                 "estimated_extraction_cost_usd": round(usage.estimated_cost_usd, 6),
                 "extraction_provider": usage.provider,
-                "review_required": True,
+                "review_required": not auto_publish,
+                "auto_publish_iyin": auto_publish,
+                "auto_approved_chunk_count": auto_approved_count,
+                "auto_rejected_turn_count": auto_rejected_count,
             }
             await db.commit()
             return {

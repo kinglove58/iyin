@@ -25,7 +25,8 @@ test("administrator can authenticate and approve a fictional fixture candidate",
   await page.getByRole("button", { name: /sign in securely/i }).click();
   await expect(page).toHaveURL(/\/admin$/);
   await page.goto("/admin/chunks");
-  await expect(page.getByRole("heading", { name: /Reconstruct questions and answers/i })).toBeVisible();
+  await expect(page).toHaveURL(/\/admin\/jobs$/);
+  await expect(page.getByRole("heading", { name: /Background jobs/i })).toBeVisible();
   await page.goto("/admin/candidates");
 
   const candidate = page.getByRole("heading", {

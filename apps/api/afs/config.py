@@ -41,6 +41,8 @@ class Settings(BaseSettings):
     paid_transcription_enabled: bool = False
     reranker_provider: str = "none"
     reranker_model: str = "none"
+    interview_turn_auto_publish_iyin: bool = True
+    interview_turn_auto_publish_min_confidence: float = 0.6
     admin_email: str = "admin@example.com"
     admin_password: str = "change-this-development-password"  # noqa: S105 - local placeholder
     session_secret: str = Field(default="development-only-session-secret-change-me", min_length=32)

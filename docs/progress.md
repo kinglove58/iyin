@@ -111,3 +111,11 @@ Updated: 2026-07-16
 - [x] Add Gemini Developer API answer generation with structured output, server-side
   citation validation, token metrics, configuration warnings, and temporary
   PostgreSQL keyword retrieval that requires no OpenAI query-embedding credit.
+- [x] Switch interview analysis to auto-publish confident AI-labelled Iyin turns
+  directly into answer-eligible Ask chunks when keyword retrieval is active, while
+  rejecting interviewer/other/uncertain/low-confidence turns. Backfilled the
+  existing queue by approving 2,222 high-confidence Iyin turns and rejecting the
+  remaining 2,055 pending suggestions.
+- [x] Remove the manual speaker-review/chunk button from the admin navigation and
+  redirect `/admin/chunks` to Jobs because interview attribution now publishes
+  eligible Ask chunks automatically after analysis.

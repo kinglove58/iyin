@@ -1,1 +1,5 @@
-import { AdminShell,SpeakerReviewQueue } from "@/components/admin";import { InterviewTurnReview } from "@/components/interview-turn-review";export default function Page(){return <AdminShell title="Speaker review" copy="Confirm attribution before any transcript evidence becomes eligible for public answers."><div className="grid gap-10"><InterviewTurnReview/><SpeakerReviewQueue/></div></AdminShell>}
+import { redirect } from "next/navigation";
+
+export default function Page() {
+  redirect("/admin/jobs");
+}

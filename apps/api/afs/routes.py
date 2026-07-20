@@ -1128,6 +1128,12 @@ async def speaker_reviews(
                     f.name AS founder_name,
                     t.review_status,
                     COUNT(c.id)::int AS chunk_count,
+                    (
+                        SELECT COUNT(*)::int
+                        FROM interview_turn_suggestions pending_turns
+                        WHERE pending_turns.source_id = s.id
+                        AND pending_turns.status = 'pending'
+                    ) AS pending_turn_count,
                     COALESCE(MAX(c.end_seconds), 0) AS duration_seconds,
                     (
                         lower(s.title) LIKE '%iyin%'
@@ -1148,6 +1154,12 @@ async def speaker_reviews(
                 AND (:status = 'all' OR t.review_status = :status)
                 GROUP BY s.id, f.name, t.review_status
                 ORDER BY
+                    (
+                        SELECT COUNT(*)::int
+                        FROM interview_turn_suggestions pending_turns
+                        WHERE pending_turns.source_id = s.id
+                        AND pending_turns.status = 'pending'
+                    ) DESC,
                     (
                         lower(s.title) LIKE '%iyin%'
                         OR lower(s.title) LIKE '%aboyeji%'
@@ -1327,8 +1339,6 @@ async def review_interview_turns(
         )
         await db.commit()
         return {"reviewed_count": len(suggestions), "approved_chunk_count": 0}
-    if settings.embedding_provider != "openai" or not settings.openai_api_key:
-        raise AppError(422, "openai_embeddings_not_enabled", "OpenAI embeddings are not configured")
     source_id = next(iter(source_ids))
     source = await db.get(Source, source_id)
     if source is None:
@@ -1350,14 +1360,22 @@ async def review_interview_turns(
         )
     ordered = sorted(suggestions, key=lambda item: item.start_seconds)
     texts = [item.cleaned_text for item in ordered]
-    embedding_provider = OpenAIEmbeddingProvider(
-        settings.openai_api_key,
-        settings.embedding_model,
-        settings.embedding_dimensions,
-        settings.openai_embedding_cost_per_million,
-    )
     started = time.perf_counter()
-    vectors, usage = await embedding_provider.embed(texts)
+    usage: ProviderUsage | None = None
+    vectors: list[list[float] | None]
+    if settings.embedding_provider == "openai":
+        if not settings.openai_api_key:
+            raise AppError(422, "openai_embeddings_not_enabled", "OpenAI embeddings are not configured")
+        embedding_provider = OpenAIEmbeddingProvider(
+            settings.openai_api_key,
+            settings.embedding_model,
+            settings.embedding_dimensions,
+            settings.openai_embedding_cost_per_million,
+        )
+        embedded_vectors, usage = await embedding_provider.embed(texts)
+        vectors = [vector for vector in embedded_vectors]
+    else:
+        vectors = [None] * len(texts)
     latency_ms = round((time.perf_counter() - started) * 1000)
     next_version = (
         await db.scalar(
@@ -1400,8 +1418,8 @@ async def review_interview_turns(
             answer_eligible=not bool(flags),
             quality_flags=flags,
             embedding=vector,
-            embedding_model=usage.model,
-            embedding_version="interview-turn-approved-v1",
+            embedding_model=usage.model if usage else None,
+            embedding_version="interview-turn-approved-v1" if usage else "interview-turn-approved-keyword-v1",
         )
         db.add(chunk)
         await db.flush()
@@ -1409,13 +1427,14 @@ async def review_interview_turns(
         suggestion.chunk_id = chunk.id
         suggestion.reviewed_by = admin.id
         suggestion.reviewed_at = now
-    await record_provider_usage(
-        db,
-        usage,
-        "interview_turn_embedding",
-        request.state.correlation_id,
-        latency_ms,
-    )
+    if usage is not None:
+        await record_provider_usage(
+            db,
+            usage,
+            "interview_turn_embedding",
+            request.state.correlation_id,
+            latency_ms,
+        )
     await audit(
         db,
         request,
