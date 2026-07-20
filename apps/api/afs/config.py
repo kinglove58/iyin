@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     zyte_api_key: str = ""
     youtube_api_key: str = ""
     openai_api_key: str = ""
+    gemini_api_key: str = ""
     embedding_provider: str = "mock"
     embedding_model: str = "deterministic-v1"
     embedding_dimensions: int = 1536
@@ -26,8 +27,18 @@ class Settings(BaseSettings):
     generation_model: str = "grounded-template-v1"
     extraction_provider: str = "mock"
     extraction_model: str = "deterministic-v1"
+    openai_generation_input_cost_per_million: float = 0.75
+    openai_generation_output_cost_per_million: float = 4.5
+    openai_extraction_input_cost_per_million: float = 0.2
+    openai_extraction_output_cost_per_million: float = 1.25
+    openai_embedding_cost_per_million: float = 0.02
+    gemini_generation_input_cost_per_million: float = 0
+    gemini_generation_output_cost_per_million: float = 0
+    gemini_extraction_input_cost_per_million: float = 0
+    gemini_extraction_output_cost_per_million: float = 0
     transcription_provider: str = "mock"
     transcription_model: str = "disabled"
+    paid_transcription_enabled: bool = False
     reranker_provider: str = "none"
     reranker_model: str = "none"
     admin_email: str = "admin@example.com"
@@ -39,6 +50,9 @@ class Settings(BaseSettings):
     max_monthly_zyte_cost: float = 25
     max_monthly_ai_cost: float = 25
     max_crawl_run_cost: float = 5
+    max_zyte_caption_batch_cost: float = 0.50
+    max_zyte_requests_per_video: int = 5
+    zyte_caption_estimated_cost_per_video: float = 0.0037
     live_crawling_enabled: bool = False
     public_accounts_enabled: bool = False
     cors_origins: str = "http://localhost:3000,http://localhost:3010"
@@ -61,6 +75,20 @@ class Settings(BaseSettings):
             warnings.append("Live crawling is disabled; fixture workflows remain available.")
         if self.embedding_provider == "mock" or self.generation_provider == "mock":
             warnings.append("Mock AI providers are active; results are labelled fixture/demo output.")
+        if (
+            "openai"
+            in {
+                self.embedding_provider,
+                self.generation_provider,
+                self.extraction_provider,
+            }
+            and not self.openai_api_key
+        ):
+            warnings.append("An OpenAI provider is selected but OPENAI_API_KEY is not configured.")
+        if self.generation_provider == "gemini" and not self.gemini_api_key:
+            warnings.append("Gemini generation is selected but GEMINI_API_KEY is not configured.")
+        if self.extraction_provider == "gemini" and not self.gemini_api_key:
+            warnings.append("Gemini extraction is selected but GEMINI_API_KEY is not configured.")
         if self.admin_password.startswith("change-"):
             warnings.append("The development admin password must be changed before deployment.")
         return warnings

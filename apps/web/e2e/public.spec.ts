@@ -3,10 +3,11 @@ import { expect, test } from "@playwright/test";
 test("public research journeys are navigable", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /evidence stays visible/i })).toBeVisible();
-  await expect(page.getByText(/not affiliated with, endorsed by or operated by/i).first()).toBeVisible();
-  await page.getByRole("link", { name: /Ask the collection/i }).click();
-  await expect(page.getByRole("heading", { name: /not a simulated person/i })).toBeVisible();
-  await expect(page.getByLabel(/What do you want to investigate/i)).toBeVisible();
+  await expect(page.getByRole("heading", { name: /lessons for people building the next africa/i })).toBeVisible();
+  await page.getByRole("link", { name: /Ask Iyin's public ideas/i }).first().click();
+  await expect(page.getByRole("heading", { name: /What would you like to understand/i })).toBeVisible();
+  await expect(page.getByLabel(/Ask a research question/i)).toBeVisible();
+  await expect(page.getByText(/links to the original moment/i)).toBeVisible();
 });
 
 test("correction form exposes accountability categories", async ({ page }) => {
@@ -19,10 +20,12 @@ test("administrator can authenticate and approve a fictional fixture candidate",
   await page.goto("/admin/login");
   await page.getByLabel("Email").fill(process.env.E2E_ADMIN_EMAIL ?? "admin@example.com");
   await page
-    .getByLabel("Password")
+    .locator('input[name="password"]')
     .fill(process.env.E2E_ADMIN_PASSWORD ?? "change-this-development-password");
   await page.getByRole("button", { name: /sign in securely/i }).click();
   await expect(page).toHaveURL(/\/admin$/);
+  await page.goto("/admin/chunks");
+  await expect(page.getByRole("heading", { name: /Reconstruct questions and answers/i })).toBeVisible();
   await page.goto("/admin/candidates");
 
   const candidate = page.getByRole("heading", {

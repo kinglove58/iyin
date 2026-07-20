@@ -71,6 +71,8 @@ uvx --from shub shub deploy YOUR_NUMERIC_PROJECT_ID
 
 The first command asks for the Scrapy Cloud API key locally. The project already
 contains `setup.py`, `requirements.txt`, and `scrapinghub.yml` for the cloud build.
+The cloud configuration explicitly installs `requirements.txt`; this is required
+for `scrapy-zyte-api` even when paid Zyte requests remain disabled.
 
 For the safest student setup, run YouTube discovery locally so its key stays in
 `.env`, and use Scrapy Cloud for direct approved crawling. To run YouTube discovery

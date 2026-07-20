@@ -69,6 +69,12 @@ class CandidateReview(BaseModel):
     source_tier: Literal["A", "B", "C", "D"] = "B"
 
 
+class CandidateBulkReview(BaseModel):
+    candidate_ids: list[uuid.UUID] = Field(min_length=1, max_length=200)
+    note: str = Field(min_length=3, max_length=2000)
+    source_tier: Literal["A", "B", "C", "D"] = "B"
+
+
 class SourceResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
@@ -101,12 +107,18 @@ class CorrectionCreate(BaseModel):
     reporter_email: EmailStr | None = None
 
 
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=4000)
+
+
 class AskRequest(BaseModel):
     question: str = Field(min_length=5, max_length=1000)
     founder_id: uuid.UUID | None = None
     topic: str | None = Field(default=None, max_length=160)
     date_from: date | None = None
     date_to: date | None = None
+    history: list[ChatMessage] = Field(default_factory=list, max_length=10)
     debug: bool = False
 
 
@@ -126,6 +138,37 @@ class SearchResult(BaseModel):
 class JobCreate(BaseModel):
     job_type: str = Field(min_length=3, max_length=100)
     payload: dict[str, object] = Field(default_factory=dict)
+
+
+class ProcessApprovedSourcesRequest(BaseModel):
+    limit: int = Field(default=200, ge=1, le=200)
+    captions_only: Literal[True] = True
+    use_zyte_proxy: bool = False
+
+
+class CleanVerifiedSourcesRequest(BaseModel):
+    limit: int = Field(default=50, ge=1, le=100)
+
+
+class AnalyzeInterviewRequest(BaseModel):
+    source_id: uuid.UUID
+
+
+class InterviewTurnReviewRequest(BaseModel):
+    suggestion_ids: list[uuid.UUID] = Field(min_length=1, max_length=200)
+    decision: Literal["approve_as_iyin", "reject"]
+    note: str = Field(min_length=3, max_length=2000)
+
+
+class SpeakerReviewBulkRequest(BaseModel):
+    source_ids: list[uuid.UUID] = Field(min_length=1, max_length=100)
+    decision: Literal[
+        "verified_single_speaker",
+        "mixed_speakers",
+        "rejected_not_founder",
+        "pending",
+    ]
+    note: str = Field(min_length=3, max_length=2000)
 
 
 class ManualImportRequest(BaseModel):

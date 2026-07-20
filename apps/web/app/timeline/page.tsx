@@ -1,3 +1,5 @@
-import { EmptyState, PageIntro, PageShell } from "@/components/site";
+import { redirect } from "next/navigation";
 
-export default function TimelinePage() { return <PageShell><PageIntro eyebrow="Idea timeline" title="Read public ideas in chronological context." copy="Timeline analysis separates the earliest, intermediate, and most recent approved evidence without assuming that a shift in emphasis proves a change of mind."/><div className="mx-auto max-w-7xl px-5 py-12 lg:px-8"><div className="mb-8 flex flex-wrap gap-3"><select className="rounded-md border border-[var(--line)] bg-white px-4 py-2" aria-label="Timeline topic"><option>All topics</option><option>Fundraising</option><option>Leadership</option></select><select className="rounded-md border border-[var(--line)] bg-white px-4 py-2" aria-label="Timeline period"><option>All years</option></select></div><EmptyState title="No dated evidence is available" copy="Approved sources with known publication dates will appear here in order. The system will show evidence limitations whenever the record has gaps."/></div></PageShell>; }
+export default function TimelinePage() {
+  redirect("/about");
+}

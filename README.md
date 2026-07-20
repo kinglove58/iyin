@@ -23,7 +23,8 @@ to represent the founder.
 - Scrapy discovery and approved-content modes with robots.txt, conservative domain
   throttling, Zyte integration, emergency stops, and run limits.
 - Celery/Redis tasks, immutable MinIO raw storage, semantic chunking, injection
-  flags, deterministic embeddings, reciprocal rank fusion, and grounded refusal.
+  flags, configurable OpenAI or deterministic embeddings, reciprocal rank fusion,
+  structured grounded answers, and grounded refusal.
 - An 80-question evaluation set, Pytest, Vitest, Playwright, Ruff, Mypy, ESLint,
   strict TypeScript, and GitHub Actions.
 
@@ -42,9 +43,10 @@ Open the web app at `http://localhost:3000`, API docs at
 MinIO console at `http://localhost:9001`. The first startup runs migrations and
 seeds founder metadata, the topic taxonomy, and the configured admin account.
 
-Paid services are optional. With the default environment, live crawling is disabled
-and AI calls use labelled mock providers. No genuine quotations or source approvals
-are seeded.
+Paid services are optional. With the example environment, live crawling is disabled
+and AI calls use labelled mock providers. Configure OpenAI explicitly to enable
+semantic embeddings, grounded answer generation, and versioned transcript cleanup.
+No genuine quotations or source approvals are seeded.
 
 ## Developer commands
 
@@ -85,3 +87,7 @@ See [architecture](docs/architecture.md), [security threat model](docs/security-
 [RAG design](docs/rag-design.md), and [admin guide](docs/admin-guide.md).
 Student crawling setup and the direct/API hybrid are documented in
 [Student Scrapy Cloud and hybrid crawling](docs/scrapy-cloud-student.md).
+OpenAI answer grounding and immutable transcript cleanup are documented in
+[OpenAI RAG answers and cleanup](docs/openai-rag-and-cleanup.md).
+Mixed-speaker caption reconstruction and review are documented in
+[AI-assisted interview-turn review](docs/interview-turn-review.md).

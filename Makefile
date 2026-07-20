@@ -1,4 +1,4 @@
-.PHONY: install dev migrate seed test lint typecheck eval discover discover-youtube crawl-approved-hybrid cloud-deploy crawl-fixtures reset build
+.PHONY: install dev migrate seed sync-admin test lint typecheck eval discover discover-youtube crawl-approved-hybrid cloud-deploy crawl-fixtures reset build
 
 install:
 	uv sync --group dev
@@ -12,6 +12,9 @@ migrate:
 
 seed:
 	uv run python scripts/seed.py
+
+sync-admin:
+	docker compose run --rm api python -m scripts.sync_admin_credentials
 
 test:
 	uv run pytest

@@ -21,6 +21,8 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 h1, h2, h3, .serif { font-family: Georgia, "Times New Roman", serif; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
 a { text-underline-offset: 3px; }
 button, input, select, textarea { font: inherit; }
 :focus-visible { outline: 3px solid #d0873e; outline-offset: 3px; }
@@ -31,3 +33,12 @@ button, input, select, textarea { font: inherit; }
 }
 .eyebrow { letter-spacing: .16em; text-transform: uppercase; font-size: .72rem; font-weight: 700; color: var(--forest); }
 .prose-copy { color: #39453e; line-height: 1.8; font-size: 1.04rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

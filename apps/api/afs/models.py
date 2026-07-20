@@ -147,6 +147,26 @@ class Chunk(Base, TimestampMixin):
     embedding_version: Mapped[str | None] = mapped_column(String(80))
 
 
+class InterviewTurnSuggestion(Base, TimestampMixin):
+    __tablename__ = "interview_turn_suggestions"
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    source_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("sources.id", ondelete="CASCADE"), index=True)
+    transcript_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True)
+    job_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("background_jobs.id"), nullable=True)
+    chunk_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("chunks.id"), nullable=True)
+    start_seconds: Mapped[float] = mapped_column(Float)
+    end_seconds: Mapped[float] = mapped_column(Float)
+    suggested_role: Mapped[str] = mapped_column(String(40), index=True)
+    cleaned_text: Mapped[str] = mapped_column(Text)
+    confidence: Mapped[float] = mapped_column(Float)
+    rationale: Mapped[str] = mapped_column(Text, default="")
+    segment_ids: Mapped[list[str]] = mapped_column(JSONB, default=list)
+    status: Mapped[str] = mapped_column(String(40), default="pending", index=True)
+    model: Mapped[str] = mapped_column(String(160))
+    reviewed_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 class BackgroundJob(Base, TimestampMixin):
     __tablename__ = "background_jobs"
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

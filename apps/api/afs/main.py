@@ -7,7 +7,7 @@ from fastapi.responses import Response
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 from .config import get_settings
-from .errors import AppError, app_error_handler
+from .errors import AppError, app_error_handler, unhandled_error_handler
 from .observability import RequestContextMiddleware, SecurityAndRateLimitMiddleware, configure_logging
 from .routes import router
 
@@ -29,6 +29,7 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
 )
 app.add_exception_handler(AppError, app_error_handler)  # type: ignore[arg-type]
+app.add_exception_handler(Exception, unhandled_error_handler)
 app.add_middleware(RequestContextMiddleware)
 app.add_middleware(SecurityAndRateLimitMiddleware)
 app.add_middleware(
