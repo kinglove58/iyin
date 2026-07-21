@@ -62,12 +62,6 @@ export function Footer() {
             />
           </Link>
           <p className="mt-5 max-w-xl leading-7 text-[#b9cdc1]">{NOTICE}</p>
-          <Link
-            href="/admin/login"
-            className="mt-6 inline-block text-xs text-white/45"
-          >
-            Research administration
-          </Link>
         </div>
         <div>
           <p className="mb-4 text-xs font-bold uppercase tracking-[.18em] text-[#f6c663]">
