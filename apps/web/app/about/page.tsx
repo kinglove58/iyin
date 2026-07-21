@@ -104,8 +104,8 @@ export default function AboutPage() {
               shared by experienced African founders can travel farther; hope
               that someone at the beginning of their journey can find direction
               here; and, personally, hope that one day I may sit with Iyinoluwa,
-              show him what his example inspired me to create, and ask him to
-              mentor me.
+              show him what his example inspired me to create, and hear his
+              feedback on it.
             </p>
             <p className="serif border-l-4 border-[#ef7c4d] pl-6 text-3xl leading-snug text-[var(--ink)]">
               If this project reaches him, I hope he sees more than a website. I
