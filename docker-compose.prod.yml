@@ -25,3 +25,8 @@ services:
 volumes:
   caddy-data:
   caddy-config:
+
+networks:
+  default:
+    external: true
+    name: afs-external-net
