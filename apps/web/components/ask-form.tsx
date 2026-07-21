@@ -15,6 +15,25 @@ type ChatMessage =
   | { id: string; role: "user"; content: string }
   | { id: string; role: "assistant"; content: string; answer: Answer };
 
+type Conversation = { id: string; title: string; messages: ChatMessage[]; updatedAt: number };
+
+const HISTORY_KEY = "afs_ask_history";
+const HISTORY_LIMIT = 30;
+
+function loadHistory(): Conversation[] {
+  try {
+    const raw = window.localStorage.getItem(HISTORY_KEY);
+    return raw ? (JSON.parse(raw) as Conversation[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function truncateTitle(text: string, max = 48) {
+  const clean = text.trim();
+  return clean.length > max ? `${clean.slice(0, max).trimEnd()}…` : clean;
+}
+
 function SourceIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4 fill-none stroke-current stroke-2"><path d="M14 3h7v7m0-7L10 14"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>;
 }
@@ -76,11 +95,50 @@ export function AskForm({ initialQuestion = "" }: { initialQuestion?: string }) 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [savedChats, setSavedChats] = useState<Conversation[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     endRef.current?.scrollIntoView?.({ behavior: "smooth", block: "end" });
   }, [messages, loading]);
+
+  useEffect(() => {
+    setSavedChats(loadHistory());
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(HISTORY_KEY, JSON.stringify(savedChats));
+  }, [savedChats]);
+
+  useEffect(() => {
+    if (!activeId || messages.length === 0) return;
+    const firstUser = messages.find(message => message.role === "user");
+    const title = firstUser ? truncateTitle(firstUser.content) : "New research chat";
+    setSavedChats(current => {
+      const withoutActive = current.filter(conversation => conversation.id !== activeId);
+      return [{ id: activeId, title, messages, updatedAt: Date.now() }, ...withoutActive].slice(0, HISTORY_LIMIT);
+    });
+  }, [messages, activeId]);
+
+  function startNewChat() {
+    setMessages([]);
+    setQuestion("");
+    setError("");
+    setActiveId(null);
+  }
+
+  function resumeChat(conversation: Conversation) {
+    setMessages(conversation.messages);
+    setActiveId(conversation.id);
+    setQuestion("");
+    setError("");
+  }
+
+  function deleteChat(id: string) {
+    setSavedChats(current => current.filter(conversation => conversation.id !== id));
+    if (activeId === id) startNewChat();
+  }
 
   async function ask(nextQuestion: string) {
     const trimmed = nextQuestion.trim();
@@ -89,6 +147,8 @@ export function AskForm({ initialQuestion = "" }: { initialQuestion?: string }) 
       role: message.role,
       content: message.content,
     }));
+    const conversationId = activeId ?? crypto.randomUUID();
+    if (!activeId) setActiveId(conversationId);
     const userMessage: ChatMessage = { id: crypto.randomUUID(), role: "user", content: trimmed };
     setMessages(current => [...current, userMessage]);
     setQuestion("");
@@ -116,23 +176,46 @@ export function AskForm({ initialQuestion = "" }: { initialQuestion?: string }) 
   }
 
   return <div className="grid min-h-[calc(100vh-73px)] lg:grid-cols-[260px_minmax(0,1fr)]">
-    <aside className="hidden border-r border-[var(--line)] bg-[#eee9df] p-4 lg:block">
-      <button type="button" onClick={() => { setMessages([]); setQuestion(""); setError(""); }} className="flex w-full items-center gap-3 rounded-xl border border-[var(--line)] bg-[var(--card)] px-4 py-3 text-left text-sm font-bold shadow-sm">
+    <aside className="hidden border-r border-[var(--line)] bg-[#eee9df] p-4 lg:flex lg:h-[calc(100vh-73px)] lg:flex-col">
+      <button type="button" onClick={startNewChat} className="flex w-full shrink-0 items-center gap-3 rounded-xl border border-[var(--line)] bg-[var(--card)] px-4 py-3 text-left text-sm font-bold shadow-sm">
         <span className="text-xl text-[var(--forest)]">+</span> New research chat
       </button>
-      <div className="mt-7 px-2">
+      <div className="mt-5 min-h-0 flex-1 overflow-y-auto px-1">
+        <p className="eyebrow px-1">History</p>
+        {savedChats.length === 0 && <p className="px-1 py-3 text-xs leading-5 text-[var(--muted)]">Your past questions will appear here.</p>}
+        <div className="mt-2 grid gap-1">
+          {savedChats.map(conversation => <div key={conversation.id} className="group flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => resumeChat(conversation)}
+              className={`min-w-0 flex-1 truncate rounded-lg px-3 py-2 text-left text-sm ${conversation.id === activeId ? "bg-[var(--card)] font-bold" : "hover:bg-black/5"}`}
+            >
+              {conversation.title}
+            </button>
+            <button
+              type="button"
+              aria-label={`Delete "${conversation.title}"`}
+              onClick={() => deleteChat(conversation.id)}
+              className="hidden shrink-0 rounded-md px-2 py-1 text-[var(--muted)] hover:bg-black/5 group-hover:block"
+            >
+              ×
+            </button>
+          </div>)}
+        </div>
+      </div>
+      <div className="mt-4 shrink-0 border-t border-[var(--line)] px-2 pt-4 text-xs leading-5 text-[var(--muted)]">
         <p className="eyebrow">This collection</p>
         <p className="mt-3 text-sm font-bold">Iyinoluwa Aboyeji</p>
-        <p className="mt-2 text-xs leading-5 text-[var(--muted)]">Explore lessons drawn from Iyin&apos;s public talks and interviews. Every useful answer leads back to the original source.</p>
+        <p className="mt-2 leading-5 text-[var(--muted)]">Explore lessons drawn from Iyin&apos;s public talks and interviews. Every useful answer leads back to the original source.</p>
+        <p className="mt-4 leading-5 text-[var(--muted)]">Built as a learning project for Africa&apos;s next generation of builders.</p>
       </div>
-      <div className="mt-8 border-t border-[var(--line)] px-2 pt-5 text-xs leading-5 text-[var(--muted)]">Built as a learning project for Africa&apos;s next generation of builders.</div>
     </aside>
 
     <section className="relative flex min-w-0 flex-col bg-[var(--paper)]">
       <div className="border-b border-[var(--line)] bg-[var(--paper)]/95 px-5 py-4 backdrop-blur lg:px-8">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
           <div><p className="serif text-lg font-bold">Ask Iyin&apos;s public ideas</p><p className="text-xs text-[var(--muted)]">Clear answers with links to the original moment</p></div>
-          {messages.length > 0 && <button type="button" onClick={() => setMessages([])} className="rounded-full border border-[var(--line)] px-3 py-1.5 text-xs font-bold lg:hidden">New chat</button>}
+          {messages.length > 0 && <button type="button" onClick={startNewChat} className="rounded-full border border-[var(--line)] px-3 py-1.5 text-xs font-bold lg:hidden">New chat</button>}
         </div>
       </div>
 
