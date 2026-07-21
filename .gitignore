@@ -20,3 +20,6 @@ reports/candidate-inventory.csv
 reports/crawler-output.jsonl
 minio-data/
 postgres-data/
+*.tar.gz
+*.sql
+migration-bundle/
